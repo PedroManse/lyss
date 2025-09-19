@@ -1,15 +1,12 @@
 # Code block ('')
 # Macro block (``)
 
-# Definition :: Named Object={ [Named Properties]: Values }
-# Value :: Definition | Literal
-# Literal :: Number, String, ...
 (local name "pedro" ) # set variable $name = "pedro"
 (extern "last_name" "manse") # set variable $last_name = "manse" # notice it takes a string with the variable's name
 
 (set BT Builtints )
 (set T BT.Types ) # define T to = BT.Types
-(set Mi BT.Macro.Composer.Inputs)
+(set Mi BT.Macro.Composers.Default.Inputs)
 (set . BT ) # special deinition, import every property of BT
 
 (map!
@@ -20,7 +17,7 @@
 )
 
 (BT.Macro.def "defn!"
-	(BT.Macro.Composer.simple
+	(BT.Macro.Composers.Default.make
 		(list
 			(Mi.ident "fn_name" )
 			(Mi.literal "[" )
@@ -32,7 +29,7 @@
 			)
 			(Mi.literal "]" )
 			(Mi.maybe (Mi.type "fn_out_type" ) )
-			(Mi.atom "code" )
+			(Mi.macro_atom "code" )
 		)
 		('
 			(local typed_inputs ...)
@@ -52,17 +49,17 @@
 
 (defn "index_array"
 	(list (T.int "idx" ) (T.array T.any "arr" ) )
-	(list (T.maybe T.any ) )
+	(T.maybe T.any )
 	('
 		(return (if (>= (Array.len $arr ) $idx  ) ('
-			(None )
+			(Maybe.none )
 		') else ('
-			(Some (Array.index $idx $arr ) )
+			(Maybe.some (Array.index $idx $arr ) )
 		')) )
 	')
 )
 
-(defn! index_araray [ idx(int) arr(array) ](maybe int) (
+! (defn index_araray [ idx(int) arr(array) ](maybe(int)) (
 		(return (if (>= (Array.len $arr ) $idx  ) ('
 			(None )
 		') else ('
