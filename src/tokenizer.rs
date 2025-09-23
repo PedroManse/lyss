@@ -246,8 +246,8 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
                     name,
                     content,
                     start_line,
-                }
                     parem_depth,
+                }
             }
 
             // Params

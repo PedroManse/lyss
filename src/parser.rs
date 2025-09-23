@@ -26,23 +26,30 @@ pub struct Atom {
 pub enum Argument {
     Atom(Atom),
     Value(Value),
-    Macro(MacroDef),
+    Macro(MacroUse),
+}
+
+#[derive(Debug)]
+pub struct Code {
+    line_span: std::ops::Range<usize>,
+    exprs: Vec<Expr>,
 }
 
 #[derive(Debug)]
 pub enum ExprCont {
     Atom(Atom),
-    Macro(MacroDef),
+    Macro(MacroUse),
+    Code(Code),
 }
 
 #[derive(Debug)]
-pub struct MacroDef {
+pub struct MacroUse {
     name: String,
     content: String,
 }
 
 #[derive(Debug)]
-pub enum State {
+pub enum AtomState {
     OnAtom,
     OnArgs(FnName, Vec<Argument>),
 }
@@ -51,6 +58,7 @@ pub fn parse_atom(
     start_line: usize,
     tokens: &mut impl Iterator<Item = Token>,
 ) -> Result<Atom, LyssCompError> {
+    use AtomState as State;
     let mut state = State::OnAtom;
     while let Some(Token { line, content }) = tokens.next() {
         state = match (state, content) {
@@ -64,6 +72,11 @@ pub fn parse_atom(
                 args.push(Argument::Value(Value::Str(cnt)));
                 State::OnArgs(fn_name, args)
             }
+            (State::OnArgs(fn_name, mut args), TokenCont::Digit(cnt)) => {
+                let num = cnt.parse().map_err(LyssCompError::ParseFloat)?;
+                args.push(Argument::Value(Value::Num(num)));
+                State::OnArgs(fn_name, args)
+            }
             (State::OnArgs(fn_name, mut args), TokenCont::Path(secs)) => {
                 args.push(Argument::Value(Value::Ident(FnName::Path(secs))));
                 State::OnArgs(fn_name, args)
@@ -73,7 +86,15 @@ pub fn parse_atom(
                 State::OnArgs(fn_name, args)
             }
             (State::OnArgs(fn_name, mut args), TokenCont::Macro { name, content, .. }) => {
-                args.push(Argument::Macro(MacroDef { name, content }));
+                args.push(Argument::Macro(MacroUse { name, content }));
+                State::OnArgs(fn_name, args)
+            }
+            (State::OnArgs(fn_name, mut args), TokenCont::SingleQuote) => {
+                let (exprs, last_line) = parse_code(tokens)?;
+                args.push(Argument::Value(Value::Code(Code {
+                    exprs,
+                    line_span: line..last_line,
+                })));
                 State::OnArgs(fn_name, args)
             }
             (State::OnArgs(fn_name, arguments), TokenCont::CParam) => {
@@ -90,27 +111,80 @@ pub fn parse_atom(
     panic!()
 }
 
-pub fn parse(mut tokens: impl Iterator<Item = Token>) -> Result<Vec<Expr>, LyssCompError> {
+pub enum CodeState {
+    BeforeCode, // needs (
+    OnCode,
+    OnCodeEnd, // read ', needs )
+}
+
+pub fn parse_code(
+    tokens: &mut impl Iterator<Item = Token>,
+) -> Result<(Vec<Expr>, usize), LyssCompError> {
+    match tokens.next() {
+        Some(Token {
+            content: TokenCont::OParam,
+            ..
+        }) => {
+            let mut exprs = vec![];
+            loop {
+                let token = tokens.next().unwrap();
+                match token.content {
+                    TokenCont::CParam => break,
+                    _ => {
+                        let expr = parse_once(token, tokens)?;
+                        exprs.push(expr);
+                    }
+                }
+            }
+            let Token { line, content } = tokens.next().unwrap();
+            if let TokenCont::SingleQuote = content {
+                Ok((exprs, line))
+            } else {
+                panic!("Didn't end with close param {content:?}");
+            }
+        }
+        tkn => Err(LyssCompError::CodeWithoutRootAtom { first_token: tkn }),
+    }
+}
+
+pub fn parse_once(
+    Token { line, content }: Token,
+    tokens: &mut impl Iterator<Item = Token>,
+) -> Result<Expr, LyssCompError> {
+    Ok(match content {
+        TokenCont::OParam => {
+            let atom = parse_atom(line, tokens)?;
+            let line_span = atom.line_span.clone();
+            let cont = ExprCont::Atom(atom);
+            Expr { cont, line_span }
+        }
+        TokenCont::SingleQuote => {
+            let (exprs, end_line) = parse_code(tokens)?;
+            Expr {
+                line_span: line..end_line,
+                cont: ExprCont::Code(Code {
+                    exprs,
+                    line_span: line..end_line,
+                }),
+            }
+        }
+        TokenCont::Macro {
+            name,
+            content,
+            line_span,
+        } => {
+            let atom = MacroUse { name, content };
+            let cont = ExprCont::Macro(atom);
+            Expr { cont, line_span }
+        }
+        t => panic!("Top level expression must be either macro or atom, got {t:?}"),
+    })
+}
+
+pub fn parse(tokens: &mut impl Iterator<Item = Token>) -> Result<Vec<Expr>, LyssCompError> {
     let mut exprs = vec![];
-    while let Some(Token { line, content }) = tokens.next() {
-        let expr = match content {
-            TokenCont::OParam => {
-                let atom = parse_atom(line, &mut tokens)?;
-                let line_span = atom.line_span.clone();
-                let cont = ExprCont::Atom(atom);
-                Expr { cont, line_span }
-            }
-            TokenCont::Macro {
-                name,
-                content,
-                line_span,
-            } => {
-                let atom = MacroDef { name, content };
-                let cont = ExprCont::Macro(atom);
-                Expr { cont, line_span }
-            }
-            t => panic!("Top level expression must be either macro or atom, got {t:?}"),
-        };
+    while let Some(token) = tokens.next() {
+        let expr = parse_once(token, tokens)?;
         exprs.push(expr);
     }
     Ok(exprs)

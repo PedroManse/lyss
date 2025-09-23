@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 
-use self::parser::FnName;
+use self::parser::{Code, ExprCont, FnName};
+use self::tokenizer::Token;
 pub mod tokenizer;
 pub mod parser;
+pub mod runtime;
 
 #[derive(Debug)]
 pub enum Value {
@@ -10,10 +12,15 @@ pub enum Value {
     Num(f64),
     List(Vec<Value>),
     Ident(FnName),
+    Code(Code),
 }
 
 #[derive(Debug)]
 pub enum LyssCompError {
+    CodeWithoutRootAtom{
+        first_token: Option<Token>,
+    },
+    ParseFloat(std::num::ParseFloatError),
     CantStopToken{
         line: usize,
         file: PathBuf,

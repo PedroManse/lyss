@@ -31,40 +31,40 @@
 			(Mi.maybe (Mi.type_atom "fn_out_type" ) )
 			(Mi.macro_atom "code" )
 		)
-		('
+		'(
 			(local typed_inputs )
 			(local typed_output (
-				(if (Maybe.is_some $fn_out_type) ('
+				(if (Maybe.is_some $fn_out_type) '(
 					(Maybe.unwrap $fn_out_type)
-				') else ('
+				)' else '(
 					(list (T.any))
-				'))
+				)')
 			))
-		')
-		(`
-			(Builtints.defn $fn_name $typed_inputs $typed_output (' ($code ) ') )
-		`)
+		)'
+		`(
+			(Builtints.defn $fn_name $typed_inputs $typed_output '( ($code ) )' )
+		)`
 	)
 )
 
 (defn "index_array"
 	(list (T.int "idx" ) (T.array T.any "arr" ) )
 	(T.maybe T.any )
-	('
-		(return (if (>= (Array.len $arr ) $idx  ) ('
+	'(
+		(return (if (>= (Array.len $arr ) $idx  ) '(
 			(Maybe.none )
-		') else ('
+		)' else '(
 			(Maybe.some (Array.index $idx $arr ) )
-		')) )
-	')
+		)') )
+	)'
 )
 
 ! (defn index_araray [ idx(int) arr(array) ](maybe(int)) (
-		(return (if (>= (Array.len $arr ) $idx  ) ('
+		(return (if (>= (Array.len $arr ) $idx  ) '(
 			(None )
-		') else ('
+		)' else '(
 			(Some (Array.index $idx $arr ) )
-		')) )
+		)') )
 ) )
 
 (print "Hello")

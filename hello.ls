@@ -3,7 +3,14 @@
 			"hello" "world"
 			"hi" "jeff"
 			"good" "bye"
-	))
+	) )
 )
 
-! (print "Hello, %s" $.strings.hello)
+(local var 1 )
+(if '( (= $var 1) )' '(
+	(print "true" )
+)' else '(
+	(print "false" )
+)' )
+
+! (print "Hello, %s" $.strings.hello )

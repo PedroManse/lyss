@@ -5,7 +5,7 @@ fn main() {
     let file = std::fs::read_to_string(&file_name).unwrap();
     let o = lyss::tokenizer::tokenize(&file, &file_name);
     //println!("{o:?}");
-    let i = o.unwrap().into_iter();
-    let exprs = lyss::parser::parse(i).unwrap();
+    let mut i = o.unwrap().into_iter();
+    let exprs = lyss::parser::parse(&mut i).unwrap();
     println!("{exprs:?}");
 }
