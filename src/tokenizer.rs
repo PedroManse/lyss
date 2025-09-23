@@ -9,16 +9,20 @@ pub enum TokenCont {
     SingleQuote,
     MacroQuote,
     Ident(String),
+    Path(Vec<String>),
     String(String),
     Digit(String),
-    Dot,
-    Macro { name: String, content: String },
+    Macro {
+        name: String,
+        content: String,
+        line_span: std::ops::Range<usize>,
+    },
 }
 
 #[derive(Debug)]
 pub struct Token {
-    line: usize,
-    content: TokenCont,
+    pub line: usize,
+    pub content: TokenCont,
 }
 
 macro_rules! char_group {
@@ -35,7 +39,7 @@ macro_rules! char_group {
         '$' | '=' | '<' | '>' | '_' | '-' | '+' | '/' | '*' | char_group!(alphabet)
     };
     (ident) => {
-        char_group!(ident_start) | '.' | '!'
+        char_group!(ident_start) | '!'
     };
 }
 
@@ -46,6 +50,8 @@ pub enum State {
     String(String),
     StringSlash(String),
     Ident(String),
+    PathDot(Vec<String>),
+    Path(Vec<String>, String),
     Digit(String),
     DigitDot(String),
     MacroWaitAtom,
@@ -54,6 +60,7 @@ pub enum State {
         name: String,
         content: String,
         parem_depth: usize,
+        start_line: usize,
     },
 }
 
@@ -65,7 +72,12 @@ impl State {
             State::Ident(cnt) => TokenCont::Ident(cnt),
             State::Digit(cnt) => TokenCont::Digit(cnt),
             State::DigitDot(cnt) => TokenCont::Digit(cnt),
+            State::Path(mut secs, end) => {
+                secs.push(end);
+                TokenCont::Path(secs)
+            }
             State::Comment
+            | State::PathDot(..)
             | State::StringSlash(..)
             | State::Macro { .. }
             | State::MacroWaitContent(..)
@@ -118,7 +130,6 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
 
             // Digit
             (State::Nothing, d @ char_group!(digit)) => State::Digit(String::from(d)),
-            (State::Nothing, c @ '.') => State::DigitDot(String::from(c)),
             (State::Digit(mut cnt) | State::DigitDot(mut cnt), d @ char_group!(digit)) => {
                 cnt.push(d);
                 State::Digit(cnt)
@@ -128,11 +139,7 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
                 State::DigitDot(cnt)
             }
             (State::Digit(cnt) | State::DigitDot(cnt), char_group!(space)) => {
-                if cnt == "." {
-                    tokens.push(token!(TokenCont::Dot));
-                } else {
-                    tokens.push(token!(TokenCont::Digit(cnt)));
-                }
+                tokens.push(token!(TokenCont::Digit(cnt)));
                 State::Nothing
             }
 
@@ -144,6 +151,21 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
             }
             (State::Ident(cnt), char_group!(space)) => {
                 tokens.push(token!(TokenCont::Ident(cnt)));
+                State::Nothing
+            }
+            (State::Ident(cnt), '.') => State::PathDot(vec![cnt]),
+            (State::PathDot(secs), c @ char_group!(ident)) => State::Path(secs, String::from(c)),
+            (State::Path(mut secs, end), '.') => {
+                secs.push(end);
+                State::PathDot(secs)
+            }
+            (State::Path(secs, mut end), c @ char_group!(ident)) => {
+                end.push(c);
+                State::Path(secs, end)
+            }
+            (State::Path(mut secs, end), char_group!(space)) => {
+                secs.push(end);
+                tokens.push(token!(TokenCont::Path(secs)));
                 State::Nothing
             }
 
@@ -158,12 +180,14 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
                 name,
                 content: String::new(),
                 parem_depth: 0,
+                start_line: line,
             },
             (
                 State::Macro {
                     name,
                     mut content,
                     parem_depth,
+                    start_line,
                 },
                 '(',
             ) => {
@@ -171,6 +195,7 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
                 State::Macro {
                     name,
                     content,
+                    start_line,
                     parem_depth: parem_depth + 1,
                 }
             }
@@ -179,16 +204,22 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
                     name,
                     content,
                     parem_depth: 0,
+                    start_line,
                 },
                 ')',
             ) => {
-                tokens.push(token!(TokenCont::Macro { name, content }));
+                tokens.push(token!(TokenCont::Macro {
+                    name,
+                    content,
+                    line_span: start_line..line
+                }));
                 State::Nothing
             }
             (
                 State::Macro {
                     name,
                     mut content,
+                    start_line,
                     parem_depth,
                 },
                 ')',
@@ -197,6 +228,7 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
                 State::Macro {
                     name,
                     content,
+                    start_line,
                     parem_depth: parem_depth - 1,
                 }
             }
@@ -205,6 +237,7 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
                     name,
                     mut content,
                     parem_depth,
+                    start_line,
                 },
                 c,
             ) => {
@@ -212,8 +245,9 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
                 State::Macro {
                     name,
                     content,
-                    parem_depth,
+                    start_line,
                 }
+                    parem_depth,
             }
 
             // Params
@@ -221,7 +255,7 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
                 if let Some(tkn) = s.into_token(line, file_name)? {
                     tokens.push(token!(tkn));
                 }
-                tokens.push(token!(TokenCont::CParam));
+                tokens.push(token!(TokenCont::OParam));
                 State::Nothing
             }
             (s, ')') => {
@@ -250,5 +284,10 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
             line += 1;
         }
     }
-    Ok(tokens)
+
+    if let State::Nothing = state {
+        Ok(tokens)
+    } else {
+        panic!("Unfinished state")
+    }
 }
