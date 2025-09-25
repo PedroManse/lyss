@@ -5,8 +5,8 @@ use crate::{LyssCompError, Value};
 
 #[derive(Debug)]
 pub struct Expr {
-    line_span: std::ops::Range<usize>,
-    cont: ExprCont,
+    pub line_span: std::ops::Range<usize>,
+    pub cont: ExprCont,
 }
 
 #[derive(Debug)]
@@ -17,9 +17,9 @@ pub enum FnName {
 
 #[derive(Debug)]
 pub struct Atom {
-    line_span: std::ops::Range<usize>,
-    fn_name: FnName,
-    arguments: Vec<Argument>,
+    pub line_span: std::ops::Range<usize>,
+    pub fn_name: FnName,
+    pub arguments: Vec<Argument>,
 }
 
 #[derive(Debug)]
@@ -31,8 +31,8 @@ pub enum Argument {
 
 #[derive(Debug)]
 pub struct Code {
-    line_span: std::ops::Range<usize>,
-    exprs: Vec<Expr>,
+    pub line_span: std::ops::Range<usize>,
+    pub exprs: Vec<Expr>,
 }
 
 #[derive(Debug)]
@@ -44,8 +44,8 @@ pub enum ExprCont {
 
 #[derive(Debug)]
 pub struct MacroUse {
-    name: String,
-    content: String,
+    pub name: String,
+    pub content: String,
 }
 
 #[derive(Debug)]

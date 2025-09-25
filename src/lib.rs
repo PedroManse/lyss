@@ -3,8 +3,9 @@ use std::path::PathBuf;
 use self::parser::{Code, ExprCont, FnName};
 use self::tokenizer::Token;
 pub mod tokenizer;
+pub mod display;
 pub mod parser;
-pub mod runtime;
+//pub mod runtime;
 
 #[derive(Debug)]
 pub enum Value {
