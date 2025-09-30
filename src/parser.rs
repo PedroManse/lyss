@@ -3,46 +3,44 @@
 use crate::tokenizer::{Token, TokenCont};
 use crate::{LyssCompError, Value};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Expr {
     pub line_span: std::ops::Range<usize>,
     pub cont: ExprCont,
 }
 
-#[derive(Debug)]
-pub enum FnName {
-    Single(String),
-    Path(Vec<String>),
-}
+#[derive(Debug, Clone)]
+pub struct FnName(pub Vec<String>);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Atom {
     pub line_span: std::ops::Range<usize>,
     pub fn_name: FnName,
     pub arguments: Vec<Argument>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Argument {
+    Var(String),
     Atom(Atom),
     Value(Value),
     Macro(MacroUse),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Code {
     pub line_span: std::ops::Range<usize>,
     pub exprs: Vec<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExprCont {
     Atom(Atom),
     Macro(MacroUse),
     Code(Code),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MacroUse {
     pub name: String,
     pub content: String,
@@ -62,8 +60,8 @@ pub fn parse_atom(
     let mut state = State::OnAtom;
     while let Some(Token { line, content }) = tokens.next() {
         state = match (state, content) {
-            (State::OnAtom, TokenCont::Ident(cnt)) => State::OnArgs(FnName::Single(cnt), vec![]),
-            (State::OnAtom, TokenCont::Path(cnt)) => State::OnArgs(FnName::Path(cnt), vec![]),
+            (State::OnAtom, TokenCont::Ident(cnt)) => State::OnArgs(FnName(vec![cnt]), vec![]),
+            (State::OnAtom, TokenCont::Path(cnt)) => State::OnArgs(FnName(cnt), vec![]),
             (State::OnArgs(fn_name, mut args), TokenCont::OParam) => {
                 args.push(Argument::Atom(parse_atom(line, tokens)?));
                 State::OnArgs(fn_name, args)
@@ -77,12 +75,16 @@ pub fn parse_atom(
                 args.push(Argument::Value(Value::Num(num)));
                 State::OnArgs(fn_name, args)
             }
-            (State::OnArgs(fn_name, mut args), TokenCont::Path(secs)) => {
-                args.push(Argument::Value(Value::Ident(FnName::Path(secs))));
+            (State::OnArgs(fn_name, mut args), TokenCont::Path(mut secs)) => {
+                if secs.len() == 2 && secs.first().map(String::as_str) == Some("$") {
+                    args.push(Argument::Var(secs.swap_remove(1)));
+                } else {
+                    args.push(Argument::Value(Value::Ident(FnName(secs))));
+                }
                 State::OnArgs(fn_name, args)
             }
             (State::OnArgs(fn_name, mut args), TokenCont::Ident(cnt)) => {
-                args.push(Argument::Value(Value::Ident(FnName::Single(cnt))));
+                args.push(Argument::Value(Value::Ident(FnName(vec![cnt]))));
                 State::OnArgs(fn_name, args)
             }
             (State::OnArgs(fn_name, mut args), TokenCont::Macro { name, content, .. }) => {

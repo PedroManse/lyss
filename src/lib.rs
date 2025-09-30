@@ -5,9 +5,9 @@ use self::tokenizer::Token;
 pub mod tokenizer;
 pub mod display;
 pub mod parser;
-//pub mod runtime;
+pub mod runtime;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Str(String),
     Num(f64),
@@ -28,3 +28,11 @@ pub enum LyssCompError {
         tokenizer_state: tokenizer::State,
     }
 }
+
+#[derive(Debug)]
+pub enum LyssRuntimeError {
+    EntryNotFound{path: Vec<String>},
+    EntryWasLeaf{path: Vec<String>},
+    EntryWasBranch{path: Vec<String>},
+}
+

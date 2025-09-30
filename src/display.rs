@@ -39,22 +39,15 @@ impl Display for crate::parser::Code {
 
 impl Display for crate::parser::FnName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            crate::parser::FnName::Path(cnt) => {
-                let mut items = cnt.iter().peekable();
-                while let Some(i) = items.next() {
-                    write!(f, "{}", i)?;
-                    let last = items.peek().is_none();
-                    if !last {
-                        write!(f, ".")?;
-                    }
-                }
-                Ok(())
-            }
-            crate::parser::FnName::Single(cnt) => {
-                write!(f, "{}", cnt)
+        let mut items = self.0.iter().peekable();
+        while let Some(i) = items.next() {
+            write!(f, "{}", i)?;
+            let last = items.peek().is_none();
+            if !last {
+                write!(f, ".")?;
             }
         }
+        Ok(())
     }
 }
 
@@ -96,6 +89,7 @@ impl Display for crate::parser::Argument {
             crate::parser::Argument::Atom(a) => write!(f, "{a}"),
             crate::parser::Argument::Macro(m) => write!(f, "{m}"),
             crate::parser::Argument::Value(v) => write!(f, "{v}"),
+            crate::parser::Argument::Var(v) => write!(f, "$.{v}"),
         }
     }
 }
