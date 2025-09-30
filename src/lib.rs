@@ -34,5 +34,6 @@ pub enum LyssRuntimeError {
     EntryNotFound{path: Vec<String>},
     EntryWasLeaf{path: Vec<String>},
     EntryWasBranch{path: Vec<String>},
+    VarNotFound{name: String},
 }
 

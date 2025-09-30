@@ -115,8 +115,12 @@ pub fn tokenize(content: &str, file_name: &Path) -> Result<Vec<Token>, LyssCompE
             // String
             (State::Nothing, '"') => State::String(String::new()),
             (State::String(cnt), '\\') => State::StringSlash(cnt),
-            (State::StringSlash(mut cnt), c @ char_group!(space)) => {
-                cnt.push(c);
+            (State::StringSlash(mut cnt), 'n') => {
+                cnt.push('\n');
+                State::String(cnt)
+            }
+            (State::StringSlash(mut cnt), 't') => {
+                cnt.push('\t');
                 State::String(cnt)
             }
             (State::String(cnt), '"') => {

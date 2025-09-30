@@ -1,8 +1,8 @@
 # Code block ('')
 # Macro block (``)
 
-(local name "pedro" ) # set variable $name = "pedro"
-(extern "last_name" "manse") # set variable $last_name = "manse" # notice it takes a string with the variable's name
+(local name "pedro" ) # set variable $.name = "pedro"
+(extern "last_name" "manse") # set variable $.last_name = "manse" # notice it takes a string with the variable's name
 
 (set BT Builtints )
 (set T BT.Types ) # define T to = BT.Types
@@ -34,36 +34,36 @@
 		'(
 			(local typed_inputs )
 			(local typed_output (
-				(if (Maybe.is_some $fn_out_type) '(
-					(Maybe.unwrap $fn_out_type)
+				(if (Maybe.is_some _.fn_out_type) '(
+					(Maybe.unwrap _.fn_out_type)
 				)' else '(
 					(list (T.any))
 				)')
 			))
 		)'
 		`(
-			(Builtints.defn $fn_name $typed_inputs $typed_output '( ($code ) )' )
+			(Builtints.defn _.fn_name _.typed_inputs _.typed_output '( ($code ) )' )
 		)`
 	)
 )
 
 (defn "index_array"
-	(list (T.int "idx" ) (T.array T.any "arr" ) )
+	(list (T.int "idx" ) (T.list T.any "arr" ) )
 	(T.maybe T.any )
 	'(
-		(return (if (>= (Array.len $arr ) $idx  ) '(
+		(return (if (>= (Array.len $arr ) $.idx  ) '(
 			(Maybe.none )
 		)' else '(
-			(Maybe.some (Array.index $idx $arr ) )
+			(Maybe.some (Array.index $.idx $.arr ) )
 		)') )
 	)'
 )
 
 ! (defn index_araray [ idx(int) arr(array) ](maybe(int)) (
-		(return (if (>= (Array.len $arr ) $idx  ) '(
+		(return (if (>= (Array.len $.arr ) $.idx  ) '(
 			(None )
 		)' else '(
-			(Some (Array.index $idx $arr ) )
+			(Some (Array.index $.idx $.arr ) )
 		)') )
 ) )
 

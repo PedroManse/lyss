@@ -17,7 +17,7 @@ pub struct Object<V>(pub HashMap<String, ObjectEntry<V>>);
 
 /// The `$` Object
 #[derive(Debug, Default, Clone)]
-pub struct VarsObject(Object<Value>);
+pub struct VarsObject(pub Object<Value>);
 
 #[derive(Debug, Clone)]
 enum ObjectFindResult {

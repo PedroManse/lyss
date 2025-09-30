@@ -21,6 +21,28 @@ impl Display for crate::Value {
     }
 }
 
+pub struct DisplayValue(pub crate::Value);
+impl Display for DisplayValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            crate::Value::Str(cnt) => write!(f, "{}", cnt),
+            crate::Value::Num(cnt) => write!(f, "{}", cnt),
+            crate::Value::List(cnt) => {
+                write!(f, "[")?;
+                for v in cnt {
+                    write!(f, " {v} ")?;
+                }
+                write!(f, "[")?;
+                Ok(())
+            }
+            crate::Value::Ident(cnt) => write!(f, "{}", cnt),
+            crate::Value::Code(cnt) => {
+                write!(f, "{cnt}")
+            }
+        }
+    }
+}
+
 impl Display for crate::parser::Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.cont)
