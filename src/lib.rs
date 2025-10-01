@@ -13,9 +13,19 @@ pub enum Value {
     Str(String),
     Num(f64),
     List(Vec<Value>),
-    Ident(FnName),
+    //Ident(FnName),
     Code(Code),
 }
+
+//impl PartialEq for Value {
+//    fn eq(&self, other: &Self) -> bool {
+//        match (self, other) {
+//            (Value::Bool(a), Value::Bool(b)) => a==b,
+//            (Value::Num(a), Value::Num(b)) => a==b,
+//            (Value::Ident())
+//        }
+//    }
+//}
 
 #[derive(Debug)]
 pub enum LyssCompError {

@@ -14,7 +14,6 @@ impl Display for crate::Value {
                 write!(f, "[")?;
                 Ok(())
             }
-            crate::Value::Ident(cnt) => write!(f, "{}", cnt),
             crate::Value::Code(cnt) => {
                 write!(f, "{cnt}")
             }
@@ -37,7 +36,6 @@ impl Display for DisplayValue {
                 write!(f, "[")?;
                 Ok(())
             }
-            crate::Value::Ident(cnt) => write!(f, "{}", cnt),
             crate::Value::Code(cnt) => {
                 write!(f, "{cnt}")
             }
@@ -110,6 +108,7 @@ impl Display for crate::parser::Atom {
 impl Display for crate::parser::Argument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            crate::parser::Argument::Ident(cnt) => write!(f, "{}", cnt),
             crate::parser::Argument::Atom(a) => write!(f, "{a}"),
             crate::parser::Argument::Macro(m) => write!(f, "{m}"),
             crate::parser::Argument::Value(v) => write!(f, "{v}"),

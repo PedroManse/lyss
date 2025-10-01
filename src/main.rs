@@ -16,9 +16,10 @@ fn main() {
 
     let mut ctx = lyss::runtime::HostContext::new();
     let mut builtins: HashMap<String, ObjectEntry<HostFunc>> = HashMap::new();
+    let mut math: HashMap<String, ObjectEntry<HostFunc>> = HashMap::new();
 
     builtins.insert(
-        "local".to_string(),
+        "local".to_owned(),
         ObjectEntry::Leaf(HostFunc(|ctx, args| {
             Api::assert_args_count(args, 2)?;
             let var_name = Api::needs_nth_arg(args, 0)?;
@@ -34,7 +35,7 @@ fn main() {
     );
 
     builtins.insert(
-        "print".to_string(),
+        "print".to_owned(),
         ObjectEntry::Leaf(HostFunc(|ctx, args| {
             let mut out = String::new();
             for arg in args {
@@ -47,12 +48,27 @@ fn main() {
         })),
     );
 
+    math.insert(
+        "=".to_owned(),
+        ObjectEntry::Leaf(HostFunc(|ctx, args| {
+            let lhs = Api::needs_nth_arg(args, 0)?;
+            let rhs = Api::needs_nth_arg(args, 1)?;
+            let lhs = ctx.eval_argument(lhs)?;
+            let rhs = ctx.eval_argument(rhs)?;
+            todo!()
+        })),
+    );
+
+    builtins.insert(
+        "Math".to_owned(),
+        ObjectEntry::Branch(lyss::runtime::object::Object(math)),
+    );
     ctx.register_object(
-        "Builtin".to_string(),
+        "Builtin".to_owned(),
         lyss::runtime::object::Object(builtins),
     );
     ctx.register_entry(
-        "if".to_string(),
+        "if".to_owned(),
         ObjectEntry::Leaf(HostFunc(|ctx, args| {
             if args.len() != 4 {
                 return Err(LyssRuntimeError::UnmatchedArgCount {

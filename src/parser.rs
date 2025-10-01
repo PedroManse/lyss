@@ -22,6 +22,7 @@ pub struct Atom {
 #[derive(Debug, Clone)]
 pub enum Argument {
     Var(String),
+    Ident(FnName),
     Atom(Atom),
     Value(Value),
     Macro(MacroUse),
@@ -79,12 +80,12 @@ pub fn parse_atom(
                 if secs.len() == 2 && secs.first().map(String::as_str) == Some("$") {
                     args.push(Argument::Var(secs.swap_remove(1)));
                 } else {
-                    args.push(Argument::Value(Value::Ident(FnName(secs))));
+                    args.push(Argument::Ident(FnName(secs)));
                 }
                 State::OnArgs(fn_name, args)
             }
             (State::OnArgs(fn_name, mut args), TokenCont::Ident(cnt)) => {
-                args.push(Argument::Value(Value::Ident(FnName(vec![cnt]))));
+                args.push(Argument::Ident(FnName(vec![cnt])));
                 State::OnArgs(fn_name, args)
             }
             (State::OnArgs(fn_name, mut args), TokenCont::Macro { name, content, .. }) => {

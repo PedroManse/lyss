@@ -13,6 +13,7 @@ impl Context<'_> {
             Argument::Atom(atom) => self.execute_atom(atom)?,
             Argument::Value(v) => v.clone(),
             Argument::Macro(m) => todo!("macro argument {m}"),
+            Argument::Ident(path) => todo!(),
         })
     }
 }

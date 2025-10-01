@@ -5,12 +5,12 @@
 #			"good" "bye"
 #	) )
 #)
-#
+
 (Builtin.local $.var 1 )
-(if '( (Builtin.Math.= $.var 1) )' '(
-	(print "true" )
+(if '( (Builtin.Math.= $.var 1 ) )' '(
+	(Builtin.print "true\n" )
 )' else '(
-	(print "false" )
+	(Builtin.print "false" )
 )' )
 
 (Builtin.local $.hello "uwu" )
