@@ -130,13 +130,11 @@ pub fn parse_code(
             let mut exprs = vec![];
             loop {
                 let token = tokens.next().unwrap();
-                match token.content {
-                    TokenCont::CParam => break,
-                    _ => {
-                        let expr = parse_once(token, tokens)?;
-                        exprs.push(expr);
-                    }
+                if let TokenCont::CParam = token.content {
+                    break;
                 }
+                let expr = parse_once(token, tokens)?;
+                exprs.push(expr);
             }
             let Token { line, content } = tokens.next().unwrap();
             if let TokenCont::SingleQuote = content {
@@ -158,7 +156,7 @@ pub fn parse_once(
             let atom = parse_atom(line, tokens)?;
             let line_span = atom.line_span.clone();
             let cont = ExprCont::Atom(atom);
-            Expr { cont, line_span }
+            Expr { line_span, cont }
         }
         TokenCont::SingleQuote => {
             let (exprs, end_line) = parse_code(tokens)?;
@@ -177,7 +175,7 @@ pub fn parse_once(
         } => {
             let atom = MacroUse { name, content };
             let cont = ExprCont::Macro(atom);
-            Expr { cont, line_span }
+            Expr { line_span, cont }
         }
         t => panic!("Top level expression must be either macro or atom, got {t:?}"),
     })

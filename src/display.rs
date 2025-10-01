@@ -5,6 +5,7 @@ impl Display for crate::Value {
         match self {
             crate::Value::Str(cnt) => write!(f, "\"{}\"", cnt),
             crate::Value::Num(cnt) => write!(f, "{}", cnt),
+            crate::Value::Bool(b) => write!(f, "{b}"),
             crate::Value::List(cnt) => {
                 write!(f, "[")?;
                 for v in cnt {
@@ -26,6 +27,7 @@ impl Display for DisplayValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.0 {
             crate::Value::Str(cnt) => write!(f, "{}", cnt),
+            crate::Value::Bool(b) => write!(f, "{b}"),
             crate::Value::Num(cnt) => write!(f, "{}", cnt),
             crate::Value::List(cnt) => {
                 write!(f, "[")?;

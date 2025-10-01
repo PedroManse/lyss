@@ -71,4 +71,3 @@ impl<V: Clone> Default for Object<V> {
         Object(HashMap::default())
     }
 }
-

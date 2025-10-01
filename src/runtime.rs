@@ -1,8 +1,9 @@
+pub mod api;
 pub mod object;
 
 use std::collections::HashMap;
 
-use crate::parser::{Argument, Atom, Expr, FnName};
+use crate::parser::{Argument, Atom, Expr};
 use crate::{LyssRuntimeError, Value};
 use object::*;
 
@@ -29,17 +30,19 @@ pub struct Context<'p> {
 }
 
 impl HostContext {
+    #[must_use]
     pub fn new() -> HostContext {
         Context::default()
     }
 }
 
-impl<'p> Context<'p> {
-    pub fn run(&mut self, code: &[Expr]) -> Result<(), LyssRuntimeError> {
+impl Context<'_> {
+    pub fn run(&mut self, code: &[Expr]) -> Result<Option<Value>, LyssRuntimeError> {
+        let mut result = Ok(None);
         for expr in code {
-            self.execute_expr(expr)?;
+            result = Ok(Some(self.execute_expr(expr)?));
         }
-        Ok(())
+        result
     }
     pub fn register_object(&mut self, name: String, entry: Object<HostFunc>) {
         self.functions.0.insert(name, ObjectEntry::Branch(entry));
@@ -64,18 +67,5 @@ impl<'p> Context<'p> {
         self.functions
             .find_leaf(&atom.fn_name.0)?
             .call(self, &atom.arguments)
-    }
-    pub fn eval_argument(&mut self, argument: &Argument) -> Result<Value, LyssRuntimeError> {
-        Ok(match argument {
-            Argument::Var(name) => self
-                .get_var(name)
-                .ok_or(LyssRuntimeError::VarNotFound {
-                    name: name.to_string(),
-                })?
-                .clone(),
-            Argument::Atom(atom) => self.execute_atom(atom)?,
-            Argument::Value(v) => v.clone(),
-            Argument::Macro(m) => todo!("macro argument {m}"),
-        })
     }
 }
