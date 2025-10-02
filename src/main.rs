@@ -55,7 +55,7 @@ fn main() {
             let rhs = Api::needs_nth_arg(args, 1)?;
             let lhs = ctx.eval_argument(lhs)?;
             let rhs = ctx.eval_argument(rhs)?;
-            todo!()
+            return Ok(Value::Bool(lhs == rhs));
         })),
     );
 

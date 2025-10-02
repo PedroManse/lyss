@@ -20,7 +20,7 @@ impl Context<'_> {
 
 impl Api {
     pub fn expect_this_text(argument: &Argument, text: &str) -> Result<(), LyssRuntimeError> {
-        if let Argument::Value(Value::Ident(path)) = argument
+        if let Argument::Ident(path) = argument
             && path.0.len() == 1
             && path.0.first().map(String::as_str) == Some(text)
         {

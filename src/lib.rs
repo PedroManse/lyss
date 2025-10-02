@@ -17,15 +17,18 @@ pub enum Value {
     Code(Code),
 }
 
-//impl PartialEq for Value {
-//    fn eq(&self, other: &Self) -> bool {
-//        match (self, other) {
-//            (Value::Bool(a), Value::Bool(b)) => a==b,
-//            (Value::Num(a), Value::Num(b)) => a==b,
-//            (Value::Ident())
-//        }
-//    }
-//}
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Num(a), Value::Num(b)) => a == b,
+            (Value::Str(a), Value::Str(b)) => a == b,
+            (Value::List(_), _) => false,
+            (Value::Code(_), _) => false,
+            _ => false,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum LyssCompError {

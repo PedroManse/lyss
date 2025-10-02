@@ -10,7 +10,7 @@
 (if '( (Builtin.Math.= $.var 1 ) )' '(
 	(Builtin.print "true\n" )
 )' else '(
-	(Builtin.print "false" )
+	(Builtin.print "false\n" )
 )' )
 
 (Builtin.local $.hello "uwu" )
