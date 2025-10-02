@@ -38,7 +38,7 @@ pub struct Code {
 pub enum ExprCont {
     Atom(Atom),
     Macro(MacroUse),
-    Code(Code),
+    //Code(Code),
 }
 
 #[derive(Debug, Clone)]
@@ -159,16 +159,16 @@ pub fn parse_once(
             let cont = ExprCont::Atom(atom);
             Expr { line_span, cont }
         }
-        TokenCont::SingleQuote => {
-            let (exprs, end_line) = parse_code(tokens)?;
-            Expr {
-                line_span: line..end_line,
-                cont: ExprCont::Code(Code {
-                    exprs,
-                    line_span: line..end_line,
-                }),
-            }
-        }
+        //TokenCont::SingleQuote => {
+        //    let (exprs, end_line) = parse_code(tokens)?;
+        //    Expr {
+        //        line_span: line..end_line,
+        //        cont: ExprCont::Code(Code {
+        //            exprs,
+        //            line_span: line..end_line,
+        //        }),
+        //    }
+        //}
         TokenCont::Macro {
             name,
             content,

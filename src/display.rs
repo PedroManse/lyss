@@ -79,9 +79,9 @@ impl Display for crate::ExprCont {
             crate::parser::ExprCont::Atom(a) => {
                 write!(f, "{a}")
             }
-            crate::parser::ExprCont::Code(c) => {
-                write!(f, "{c}")
-            }
+            //crate::parser::ExprCont::Code(c) => {
+            //    write!(f, "{c}")
+            //}
             crate::parser::ExprCont::Macro(m) => {
                 write!(f, "{m}")
             }

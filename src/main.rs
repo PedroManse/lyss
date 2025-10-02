@@ -23,7 +23,7 @@ fn main() {
         ObjectEntry::Leaf(HostFunc(|ctx, args| {
             Api::assert_args_count(args, 2)?;
             let var_name = Api::needs_nth_arg(args, 0)?;
-            let name = Api::expect_ident(var_name).ok_or(LyssRuntimeError::UnexpectedArg {
+            let name = Api::expect_var(var_name).ok_or(LyssRuntimeError::UnexpectedArg {
                 arg: var_name.clone(),
                 expected: "Identifier",
             })?;
@@ -48,6 +48,45 @@ fn main() {
         })),
     );
 
+    builtins.insert(
+        "alias".to_owned(),
+        ObjectEntry::Leaf(HostFunc(|ctx, args| {
+            let to = Api::needs_nth_arg(args, 0)?;
+            let from = Api::needs_nth_arg(args, 1)?;
+            let to = Api::expect_ident(to).ok_or(LyssRuntimeError::UnexpectedArg {
+                arg: to.clone(),
+                expected: "Identifier Path",
+            })?;
+            let from = Api::expect_ident(from).ok_or(LyssRuntimeError::UnexpectedArg {
+                arg: from.clone(),
+                expected: "Single Identifier",
+            })?;
+            assert!(from.0.len() == 1);
+            let from = from.0[0].to_owned();
+
+            ctx.aliases.insert(from, to.0.clone());
+            Ok(Value::List(
+                to.0.iter().map(String::to_owned).map(Value::Str).collect(),
+            ))
+        })),
+    );
+
+    builtins.insert(
+        "scope".to_owned(),
+        ObjectEntry::Leaf(HostFunc(|ctx, args| {
+            let to = Api::needs_nth_arg(args, 0)?;
+            let to = Api::expect_ident(to).ok_or(LyssRuntimeError::UnexpectedArg {
+                arg: to.clone(),
+                expected: "Identifier Path",
+            })?;
+
+            ctx.scopes.push(lyss::parser::FnName(to.0.clone()));
+            Ok(Value::List(
+                to.0.iter().map(String::to_owned).map(Value::Str).collect(),
+            ))
+        })),
+    );
+
     math.insert(
         "=".to_owned(),
         ObjectEntry::Leaf(HostFunc(|ctx, args| {
@@ -67,6 +106,7 @@ fn main() {
         "Builtin".to_owned(),
         lyss::runtime::object::Object(builtins),
     );
+
     ctx.register_entry(
         "if".to_owned(),
         ObjectEntry::Leaf(HostFunc(|ctx, args| {

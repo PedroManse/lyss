@@ -3,7 +3,7 @@ pub mod object;
 
 use std::collections::HashMap;
 
-use crate::parser::{Argument, Atom, Expr};
+use crate::parser::{Argument, Atom, Expr, FnName};
 use crate::{LyssRuntimeError, Value};
 use object::*;
 
@@ -27,6 +27,8 @@ pub struct Context<'p> {
     pub object_store: Object<Value>,
     pub functions: Object<HostFunc>,
     pub variables: HashMap<String, Value>,
+    pub aliases: HashMap<String, Vec<String>>,
+    pub scopes: Vec<FnName>,
 }
 
 impl HostContext {
@@ -59,13 +61,33 @@ impl Context<'_> {
     fn execute_expr(&mut self, expr: &Expr) -> Result<Value, LyssRuntimeError> {
         match &expr.cont {
             crate::parser::ExprCont::Atom(atom) => self.execute_atom(atom),
-            crate::parser::ExprCont::Code(code) => Ok(Value::Code(code.clone())),
+            //crate::parser::ExprCont::Code(code) => todo!(),
             crate::parser::ExprCont::Macro(m) => todo!("Execute macros {m}"),
         }
     }
     pub fn execute_atom(&mut self, atom: &Atom) -> Result<Value, LyssRuntimeError> {
-        self.functions
-            .find_leaf(&atom.fn_name.0)?
-            .call(self, &atom.arguments)
+        let hook = if atom.fn_name.0[0].starts_with('$') && atom.fn_name.0[0] != "$" {
+            let alias_root = &atom.fn_name.0[0];
+            let rest = self.aliases[alias_root].to_vec();
+            let branch_alias = self.functions.find_branch(&rest)?;
+            branch_alias.find_leaf(&atom.fn_name.0[1..])
+        } else {
+            self.functions.find_leaf(&atom.fn_name.0)
+        };
+
+        match hook {
+            Ok(hook) => hook.call(self, &atom.arguments),
+            Err(err) => {
+                for scope in &self.scopes {
+                    let branch = self.functions.find_branch(&scope.0)?;
+                    let leaf_option = branch.find_leaf(&atom.fn_name.0);
+                    if let Ok(leaf_option) = leaf_option {
+                        return leaf_option.call(self, &atom.arguments);
+                    }
+                }
+                Err(err)
+            }
+        }
     }
 }
+

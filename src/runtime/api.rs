@@ -1,3 +1,5 @@
+use crate::parser::FnName;
+
 use super::*;
 pub struct Api;
 
@@ -33,9 +35,16 @@ impl Api {
         }
     }
     #[must_use]
-    pub fn expect_ident(argument: &Argument) -> Option<&str> {
+    pub fn expect_var(argument: &Argument) -> Option<&str> {
         match argument {
             Argument::Var(txt) => Some(txt),
+            _ => None,
+        }
+    }
+    #[must_use]
+    pub fn expect_ident(argument: &Argument) -> Option<&FnName> {
+        match argument {
+            Argument::Ident(cnt) => Some(cnt),
             _ => None,
         }
     }

@@ -6,12 +6,15 @@
 #	) )
 #)
 
-(Builtin.local $.var 1 )
-(if '( (Builtin.Math.= $.var 1 ) )' '(
-	(Builtin.print "true\n" )
+(Builtin.scope Builtin)
+(Builtin.alias Builtin.Math $M )
+
+(local $.var 1 )
+(if '( ($M.= $.var 1 ) )' '(
+	(print "true\n" )
 )' else '(
-	(Builtin.print "false\n" )
+	(print "false\n" )
 )' )
 
-(Builtin.local $.hello "uwu" )
-(Builtin.print "Hello, " $.hello "\n" )
+(local $.hello "uwu" )
+(print "Hello, " $.hello "\n" )
