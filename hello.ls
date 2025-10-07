@@ -6,11 +6,13 @@
 #	) )
 #)
 
-(Builtin.scope Builtin)
-(Builtin.alias Builtin.Math $M )
+
+(Builtin.scope Builtin )
+(Builtin.scope Builtin.Math )
+(Builtin.alias Builtin.Math Math )
 
 (local $.var 1 )
-(if '( ($M.= $.var 1 ) )' '(
+(if '( (= $.var 1 ) )' '(
 	(print "true\n" )
 )' else '(
 	(print "false\n" )

@@ -1,14 +1,15 @@
 use crate::{LyssRuntimeError, Value};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum ObjectEntry<V> {
-    Branch(Object<V>),
+    Branch(Rc<Object<V>>),
     Leaf(V),
 }
 
 pub enum ObjectSearch<'o, V> {
-    Branch(&'o Object<V>),
+    Branch(&'o Rc<Object<V>>),
     Leaf(&'o V),
 }
 
@@ -42,7 +43,8 @@ impl<V: Clone> Object<V> {
             }),
         }
     }
-    pub fn find_branch(&self, path: &[String]) -> Result<&Object<V>, LyssRuntimeError> {
+
+    pub fn find_branch(&self, path: &[String]) -> Result<&Rc<Object<V>>, LyssRuntimeError> {
         let obj_entry = self.find_deep(path.iter()).map_err(|e| match e {
             ObjectFindResult::EarlyLeaf => LyssRuntimeError::EntryWasLeaf {
                 path: path.to_vec(),
@@ -56,18 +58,33 @@ impl<V: Clone> Object<V> {
             ObjectSearch::Branch(b) => Ok(b),
         }
     }
+
+    pub fn find(&self, path: &[String]) -> Result<ObjectSearch<'_, V>, LyssRuntimeError> {
+        self.find_deep(path.iter()).map_err(|e| match e {
+            ObjectFindResult::EarlyLeaf => LyssRuntimeError::EntryWasLeaf {
+                path: path.to_vec(),
+            },
+            ObjectFindResult::NotFound => LyssRuntimeError::EntryNotFound {
+                path: path.to_vec(),
+            },
+        })
+    }
+
     fn find_deep(
         &self,
         paths: std::slice::Iter<String>,
     ) -> Result<ObjectSearch<'_, V>, ObjectFindResult> {
-        let mut obj = ObjectSearch::Branch(self);
+        let mut obj = None;
         for path in paths {
-            obj = match obj {
-                ObjectSearch::Branch(b) => b.find_next(path).ok_or(ObjectFindResult::NotFound),
-                ObjectSearch::Leaf(_) => Err(ObjectFindResult::EarlyLeaf),
-            }?;
+            obj = Some(match obj {
+                Some(ObjectSearch::Branch(b)) => {
+                    b.find_next(path).ok_or(ObjectFindResult::NotFound)
+                }
+                Some(ObjectSearch::Leaf(_)) => Err(ObjectFindResult::EarlyLeaf),
+                None => self.find_next(path).ok_or(ObjectFindResult::NotFound),
+            }?);
         }
-        Ok(obj)
+        Ok(obj.unwrap())
     }
     fn find_next(&self, path: &str) -> Option<ObjectSearch<'_, V>> {
         Some(match self.0.get(path)? {

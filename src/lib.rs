@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use self::parser::{Argument, Code, ExprCont, FnName};
+use self::parser::{Argument, Code, ExprCont};
 use self::tokenizer::Token;
 pub mod display;
 pub mod parser;

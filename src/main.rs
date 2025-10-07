@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use lyss::display::DisplayValue;
 use lyss::runtime::HostFunc;
@@ -63,11 +64,13 @@ fn main() {
             })?;
             assert!(from.0.len() == 1);
             let from = from.0[0].to_owned();
+            let to = match ctx.functions.find(&to.0)? {
+                lyss::runtime::object::ObjectSearch::Leaf(l) => ObjectEntry::Leaf(l.clone()),
+                lyss::runtime::object::ObjectSearch::Branch(b) => ObjectEntry::Branch(Rc::clone(b)),
+            };
 
-            ctx.aliases.insert(from, to.0.clone());
-            Ok(Value::List(
-                to.0.iter().map(String::to_owned).map(Value::Str).collect(),
-            ))
+            ctx.register(from.clone(), to);
+            Ok(Value::Str(from))
         })),
     );
 
@@ -75,14 +78,20 @@ fn main() {
         "scope".to_owned(),
         ObjectEntry::Leaf(HostFunc(|ctx, args| {
             let to = Api::needs_nth_arg(args, 0)?;
-            let to = Api::expect_ident(to).ok_or(LyssRuntimeError::UnexpectedArg {
+            let to_name = Api::expect_ident(to).ok_or(LyssRuntimeError::UnexpectedArg {
                 arg: to.clone(),
                 expected: "Identifier Path",
             })?;
+            let to = ctx.functions.find_branch(&to_name.0)?;
+            ctx.scopes.push(Rc::clone(to));
 
-            ctx.scopes.push(lyss::parser::FnName(to.0.clone()));
             Ok(Value::List(
-                to.0.iter().map(String::to_owned).map(Value::Str).collect(),
+                to_name
+                    .0
+                    .iter()
+                    .map(String::to_owned)
+                    .map(Value::Str)
+                    .collect(),
             ))
         })),
     );
@@ -100,7 +109,7 @@ fn main() {
 
     builtins.insert(
         "Math".to_owned(),
-        ObjectEntry::Branch(lyss::runtime::object::Object(math)),
+        ObjectEntry::Branch(Rc::new(lyss::runtime::object::Object(math))),
     );
     ctx.register_object(
         "Builtin".to_owned(),
@@ -159,4 +168,5 @@ fn main() {
         })),
     );
     ctx.run(&exprs).unwrap();
+    println!("{ctx:?}");
 }
